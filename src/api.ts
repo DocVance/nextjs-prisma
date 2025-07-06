@@ -1,45 +1,48 @@
-import useSWR, { mutate } from "swr";
-import { Todo } from "./types";
+import useSWR from "swr";
 
-const fetcher = (input: RequestInfo, init?: RequestInit) =>
-  fetch(input, init).then((res) => res.json());
+// Define the Entry type
+export type Entry = {
+  id: string;
+  title: string;
+  abstract?: string;
+};
 
-const todoPath = "/api/todos";
+// SWR fetcher function
+const fetcher = (url: string) =>
+  fetch(url).then(res => {
+    if (!res.ok) throw new Error("Failed to fetch");
+    return res.json();
+  });
 
-export const useTodos = () => useSWR<Todo[]>(todoPath, fetcher);
+// Fetch all entries
+export const useEntries = () => {
+  return useSWR<Entry[]>("/api/entries", fetcher);
+};
 
-export const createTodo = async (text: string) => {
-  mutate(
-    todoPath,
-    todos => [{ text, completed: false, id: "new-todo" }, ...todos],
-    false,
-  );
-  await fetch(todoPath, {
+// Create a new entry
+export const createEntry = async (entry: Omit<Entry, "id">) => {
+  const res = await fetch("/api/entries", {
     method: "POST",
-    body: JSON.stringify({ text }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(entry),
   });
 
-  mutate(todoPath);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.message || "Failed to create entry");
+  }
 };
 
-export const toggleTodo = async (todo: Todo) => {
-  mutate(
-    todoPath,
-    todos =>
-      todos.map(t =>
-        t.id === todo.id ? { ...todo, completed: !t.completed } : t,
-      ),
-    false,
-  );
-  await fetch(`${todoPath}?todoId=${todo.id}`, {
-    method: "PUT",
-    body: JSON.stringify({ completed: !todo.completed }),
+// Delete an entry
+export const deleteEntry = async (id: string) => {
+  const res = await fetch(`/api/entries/${id}`, {
+    method: "DELETE",
   });
-  mutate(todoPath);
-};
 
-export const deleteTodo = async (id: string) => {
-  mutate(todoPath, todos => todos.filter(t => t.id !== id), false);
-  await fetch(`${todoPath}?todoId=${id}`, { method: "DELETE" });
-  mutate(todoPath);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.message || "Failed to delete entry");
+  }
 };
