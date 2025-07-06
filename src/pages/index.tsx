@@ -1,68 +1,68 @@
 import { NextPage } from "next";
 import Head from "next/head";
-import { useMemo, useState } from "react";
-import { createTodo, deleteTodo, toggleTodo, useTodos } from "../api";
+import { useState } from "react";
 import styles from "../styles/Home.module.css";
-import { Todo } from "../types";
+import { createEntry, deleteEntry, useEntries } from "../api"; // Adjust as you build this
+import { Entry } from "../types"; // Assume Entry type exists or add it
 
-export const TodoList: React.FC = () => {
-  const { data: todos, error } = useTodos();
+export const EntryList: React.FC = () => {
+  const { data: entries, error } = useEntries(); // Replace with your hook
 
-  if (error != null) return <div>Error loading todos...</div>;
-  if (todos == null) return <div>Loading...</div>;
+  if (error != null) return <div>Error loading entries...</div>;
+  if (entries == null) return <div>Loading...</div>;
 
-  if (todos.length === 0) {
-    return <div className={styles.emptyState}>Try searching!</div>;
+  if (entries.length === 0) {
+    return <div className={styles.emptyState}>No entries yet.</div>;
   }
 
   return (
     <ul className={styles.todoList}>
-      {todos.map(todo => (
-        <TodoItem todo={todo} />
+      {entries.map(entry => (
+        <EntryItem entry={entry} key={entry.id} />
       ))}
     </ul>
   );
 };
 
-const TodoItem: React.FC<{ todo: Todo }> = ({ todo }) => (
+const EntryItem: React.FC<{ entry: Entry }> = ({ entry }) => (
   <li className={styles.todo}>
-    <label
-      className={`${styles.label} ${todo.completed ? styles.checked : ""}`}
-    >
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        className={`${styles.checkbox}`}
-        onChange={() => toggleTodo(todo)}
-      />
-      {todo.text}
-    </label>
-
-    <button className={styles.deleteButton} onClick={() => deleteTodo(todo.id)}>
+    <div className={styles.label}>
+      <strong>{entry.title}</strong><br />
+      <small>{entry.abstract || "No abstract available"}</small>
+    </div>
+    <button className={styles.deleteButton} onClick={() => deleteEntry(entry.id)}>
       ✕
     </button>
   </li>
 );
 
-const AddTodoInput = () => {
-  const [text, setText] = useState("");
+const AddEntryForm = () => {
+  const [title, setTitle] = useState("");
+  const [abstract, setAbstract] = useState("");
 
   return (
     <form
       onSubmit={async e => {
         e.preventDefault();
-        createTodo(text);
-        setText("");
+        await createEntry({ title, abstract });
+        setTitle("");
+        setAbstract("");
       }}
       className={styles.addTodo}
     >
       <input
         className={styles.input}
-        placeholder="Buy some milk"
-        value={text}
-        onChange={e => setText(e.target.value)}
+        placeholder="Entry Title"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
       />
-      <button className={styles.addButton}>Add</button>
+      <input
+        className={styles.input}
+        placeholder="Abstract (optional)"
+        value={abstract}
+        onChange={e => setAbstract(e.target.value)}
+      />
+      <button className={styles.addButton}>Add Entry</button>
     </form>
   );
 };
@@ -71,22 +71,20 @@ const Home: NextPage = () => {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Railway NextJS Prisma</title>
+        <title>Bibliography Tagger</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <header className={styles.header}>
-        <h1 className={styles.title}>Todos</h1>
+        <h1 className={styles.title}>📚 Bibliography Tagger</h1>
         <h2 className={styles.desc}>
-          NextJS app connected to Postgres using Prisma and hosted on{" "}
-          <a href="https://railway.app">Railway</a>
+          Classify and tag entries collaboratively. Built with Next.js, Prisma, and Railway.
         </h2>
       </header>
 
       <main className={styles.main}>
-        <AddTodoInput />
-
-        <TodoList />
+        <AddEntryForm />
+        <EntryList />
       </main>
     </div>
   );
