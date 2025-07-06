@@ -1,6 +1,5 @@
-export interface Todo {
+export type Entry = {
   id: string;
-  created: string;
-  text: string;
-  completed: boolean;
+  title: string;
+  abstract?: string;
 }
